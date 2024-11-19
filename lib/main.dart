@@ -1,9 +1,25 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:projeto/views/LoginScreen.dart';
+import 'package:projeto/views/HomePage.dart';
+import 'package:projeto/views/LoginRegister.dart';
 import 'package:projeto/models/login_model.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:projeto/views/LoginScreen.dart';
+import 'firebase_options.dart';
 
-void main() {
+Future main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(const MyApp());
+}
+
+String? requiredValidator(String? value, String fieldName) {
+  if (value == null || value.isEmpty) {
+    return 'Por favor, insira $fieldName';
+  }
+  return null;
 }
 
 class MyApp extends StatelessWidget {
@@ -16,12 +32,12 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.purple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueGrey),
         useMaterial3: false,
       ),
       home: const MyWidget(),
       routes: {
-        '/login': (context) => Loginscreen(),
+        '/registrarUsuario': (context) => LoginRegister(),
       },
     );
   }
@@ -35,78 +51,17 @@ class MyWidget extends StatefulWidget {
 }
 
 class _MyWidgetState extends State<MyWidget> {
-  final _formKey = GlobalKey<FormState>();
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Login'),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              'Login',
-              style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-            Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(10),
-                    child: TextFormField(
-                      validator: (value) {
-                        if (value!.isEmpty) {
-                          return 'Por favor, insira seu email';
-                        }
-                        return null;
-                      },
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: InputDecoration(
-                        hintText: 'Email',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(10),
-                    child: TextFormField(
-                      validator: (value) {
-                        if (value!.isEmpty) {
-                          return 'Por favor, insira sua senha';
-                        }
-                        return null;
-                      },
-                      keyboardType: TextInputType.visiblePassword,
-                      obscureText: true,
-                      decoration: InputDecoration(
-                        hintText: 'Senha',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                    ),
-                  ),
-                  ElevatedButton(
-                      onPressed: () async {
-                        Navigator.pushNamed(context, '/login');
-                        if (_formKey.currentState!.validate()) {
-                          print('Validou os campos');
-                        }
-                      },
-                      child: Text('Entrar'))
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.userChanges(),
+      builder: (context, snapshot) {
+        if (snapshot.hasData) {
+          return HomePage(user: snapshot.data!);
+        } else {
+          return LoginScreen();
+        }
+      },
     );
   }
 }
